@@ -80,9 +80,11 @@ public class SoySauceViewsRenderer implements ViewsRenderer {
   SoySauceViewsRenderer(ViewsConfiguration viewsConfiguration,
                         @Nullable CspConfiguration cspConfiguration,
                         @Nullable SoyNamingMapProvider namingMapProvider,
+                        CspConfiguration cspConfiguration,
                         SoyViewsRendererConfigurationProperties soyConfiguration) {
     this.viewsConfiguration = viewsConfiguration;
     this.soyMicronautConfiguration = soyConfiguration;
+    this.injectNonce = cspConfiguration.isNonceEnabled();
     this.namingMapProvider = namingMapProvider;
     this.injectNonce = cspConfiguration != null && cspConfiguration.isNonceEnabled();
     final SoySauce precompiled = soyConfiguration.getCompiledTemplates();
@@ -141,17 +143,6 @@ public class SoySauceViewsRenderer implements ViewsRenderer {
       }
     }
     renderer.setIj(ijOverlay);
-
-    if (this.soyMicronautConfiguration.isRenamingEnabled() && this.namingMapProvider != null) {
-      SoyCssRenamingMap cssMap = this.namingMapProvider.cssRenamingMap();
-      SoyIdRenamingMap idMap = this.namingMapProvider.idRenamingMap();
-      if (cssMap != null) {
-        renderer.setCssRenamingMap(cssMap);
-      }
-      if (idMap != null) {
-        renderer.setXidRenamingMap(idMap);
-      }
-    }
 
     if (this.soyMicronautConfiguration.isRenamingEnabled() && this.namingMapProvider != null) {
       SoyCssRenamingMap cssMap = this.namingMapProvider.cssRenamingMap();
