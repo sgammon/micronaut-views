@@ -153,6 +153,17 @@ public class SoySauceViewsRenderer implements ViewsRenderer {
       }
     }
 
+    if (this.soyMicronautConfiguration.isRenamingEnabled() && this.namingMapProvider != null) {
+      SoyCssRenamingMap cssMap = this.namingMapProvider.cssRenamingMap();
+      SoyIdRenamingMap idMap = this.namingMapProvider.idRenamingMap();
+      if (cssMap != null) {
+        renderer.setCssRenamingMap(cssMap);
+      }
+      if (idMap != null) {
+        renderer.setXidRenamingMap(idMap);
+      }
+    }
+
     try {
       final AppendableToWritable target = new AppendableToWritable();
       SoySauce.WriteContinuation state;
