@@ -18,6 +18,7 @@ package io.micronaut.views.csp;
 import io.micronaut.context.annotation.ConfigurationProperties;
 import io.micronaut.core.util.Toggleable;
 import io.micronaut.views.ViewsConfigurationProperties;
+import it.unimi.dsi.Util;
 
 import javax.annotation.Nullable;
 import java.security.SecureRandom;
