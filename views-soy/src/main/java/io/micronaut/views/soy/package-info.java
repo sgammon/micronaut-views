@@ -18,7 +18,7 @@
  * Contains classes specific to Views rendered with Soy.
  *
  * @author Sam Gammon (sam@bloombox.io)
- * @since 1.2.1
+ * @since 1.3.0
  */
 @Configuration
 @Requires(property = SoyViewsRendererConfigurationProperties.PREFIX + ".enabled", notEquals = StringUtils.FALSE)

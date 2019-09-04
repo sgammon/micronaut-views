@@ -26,7 +26,7 @@ import javax.annotation.Nullable;
  * Interface via DI to acquire a {@link SoyFileSet}.
  *
  * @author Sam Gammon (sam@bloombox.io)
- * @since 1.2.1
+ * @since 1.3.0
  */
 public interface SoyFileSetProvider {
   /**
