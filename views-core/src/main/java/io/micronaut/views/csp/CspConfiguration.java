@@ -18,7 +18,6 @@ package io.micronaut.views.csp;
 import io.micronaut.context.annotation.ConfigurationProperties;
 import io.micronaut.core.util.Toggleable;
 import io.micronaut.views.ViewsConfigurationProperties;
-import it.unimi.dsi.Util;
 
 import javax.annotation.Nullable;
 import java.security.SecureRandom;
@@ -46,6 +45,12 @@ public class CspConfiguration implements Toggleable {
      */
     public static final Base64.Encoder BASE64_ENCODER =
       Base64.getEncoder().withoutPadding();
+
+    /**
+     * Default random data generator to use.
+     */
+    public static final Random DEFAULT_RANDOM =
+      new Random();
 
     /**
      * The prefix for csp configuration.
