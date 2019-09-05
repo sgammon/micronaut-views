@@ -28,12 +28,15 @@ import io.micronaut.core.io.Writable;
 import io.micronaut.core.util.ArgumentUtils;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.MediaType;
+import io.micronaut.http.MutableHttpResponse;
 import io.micronaut.http.annotation.Produces;
+import io.micronaut.views.AsyncViewsRenderer;
 import io.micronaut.views.ViewsConfiguration;
-import io.micronaut.views.ViewsRenderer;
 import io.micronaut.views.csp.CspConfiguration;
 import io.micronaut.views.csp.CspFilter;
 import io.micronaut.views.exceptions.ViewRenderingException;
+import io.reactivex.Flowable;
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +48,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 
 
 /**
@@ -59,7 +61,7 @@ import java.util.concurrent.ExecutionException;
 @Requires(classes = SoySauce.class)
 @Singleton
 @SuppressWarnings({"WeakerAccess", "UnstableApiUsage"})
-public class SoySauceViewsRenderer implements ViewsRenderer {
+public class SoySauceViewsRenderer implements AsyncViewsRenderer {
 
   private static final Logger LOG = LoggerFactory.getLogger(SoySauceViewsRenderer.class);
   private static final String INJECTED_NONCE_PROPERTY = "csp_nonce";
@@ -72,6 +74,7 @@ public class SoySauceViewsRenderer implements ViewsRenderer {
 
   /**
    * @param viewsConfiguration Views configuration properties.
+   * @param namingMapProvider Provider for renaming maps in Soy.
    * @param cspConfiguration Content-Security-Policy configuration.
    * @param namingMapProvider Soy naming map provider
    * @param soyConfiguration   Soy configuration properties.
@@ -101,24 +104,58 @@ public class SoySauceViewsRenderer implements ViewsRenderer {
     }
   }
 
-  /**
-   * @param viewName view name to be render
-   * @param data     response body to render it with a view
-   * @return A writable where the view will be written to.
-   */
-  public @Nonnull Writable render(@Nonnull String viewName, @Nullable Object data) {
-    return render(viewName, data, null);
+  private Publisher<MutableHttpResponse<Writable>> continueRender(@Nonnull SoySauce.WriteContinuation continuation,
+                                                                  @Nonnull MutableHttpResponse<Writable> response,
+                                                                  @Nonnull AppendableToWritable target) {
+    try {
+      @SuppressWarnings("BlockingMethodInNonBlockingContext")
+      SoySauce.WriteContinuation next = continuation.continueRender();
+      return handleRender(next, response, target);
+
+    } catch (IOException ioe) {
+      LOG.warn("Soy encountered IOException while rendering: '" + ioe.getMessage() + "'.");
+      return Flowable.error(ioe);
+
+    }
+  }
+
+  @Nonnull
+  private Publisher<MutableHttpResponse<Writable>> handleRender(@Nonnull SoySauce.WriteContinuation continuation,
+                                                                @Nonnull MutableHttpResponse<Writable> response,
+                                                                @Nonnull AppendableToWritable target) {
+    RenderResult.Type resultType = continuation.result().type();
+    switch (resultType) {
+      // If it's done, break and provide it to Micronaut.
+      case DONE: break;
+
+      // Render engine is signalling that we are waiting on an async task.
+      case DETACH:
+        return Flowable.fromFuture(continuation.result().future())
+          .switchMap((i) -> this.continueRender(continuation, response, target));
+
+      // Output buffer is full: indicate backpressure.
+      // @TODO(sgammon): this will never happen because AppendableToWritable doesn't yet support the interface.
+      // once it's clear how to indicate backpressure, this should be hooked up.
+      case LIMITED: break;
+
+      default: throw new IllegalArgumentException(
+        "Unrecognized continuation result: '" + resultType.name() + "'.");
+    }
+    return Flowable.just(response.body(target));
   }
 
   /**
    * @param viewName view name to be render
    * @param data     response body to render it with a view
    * @param request  HTTP request
-   * @return A writable where the view will be written to.
+   * @return Publisher that emits the HTTP response when ready
    */
   @Nonnull
   @Override
-  public Writable render(@Nonnull String viewName, @Nullable Object data, @Nullable HttpRequest<?> request) {
+  public Publisher<MutableHttpResponse<Writable>> render(@Nonnull String viewName,
+                                                         @Nullable Object data,
+                                                         @Nonnull HttpRequest<?> request,
+                                                         @Nonnull MutableHttpResponse<Writable> response) {
     ArgumentUtils.requireNonNull("viewName", viewName);
 
     Map<String, Object> ijOverlay = new HashMap<>(1);
@@ -135,7 +172,7 @@ public class SoySauceViewsRenderer implements ViewsRenderer {
       }
     });
     renderer.setData(context);
-    if (injectNonce && request != null) {
+    if (injectNonce) {
       Optional<Object> nonceObj = request.getAttribute(CspFilter.NONCE_PROPERTY);
       if (nonceObj.isPresent()) {
         String nonceValue = ((String) nonceObj.get());
@@ -159,36 +196,14 @@ public class SoySauceViewsRenderer implements ViewsRenderer {
       final AppendableToWritable target = new AppendableToWritable();
       SoySauce.WriteContinuation state;
 
+      //noinspection BlockingMethodInNonBlockingContext
       state = renderer.renderHtml(target);
-
-      while (state.result().type() != RenderResult.Type.DONE) {
-        switch (state.result().type()) {
-          // If it's done, do nothing.
-          case DONE: break;
-
-          // Render engine is signalling that we are waiting on an async task.
-          case DETACH:
-            state.result().future().get();
-            state = state.continueRender();
-            break;
-
-          // Output buffer is full.
-          case LIMITED: break;
-
-          default: break;
-        }
-      }
-      return target;
+      return handleRender(state, response, target);
 
     } catch (IOException e) {
-      throw new ViewRenderingException(
-        "Error rendering Soy Sauce view [" + viewName + "]: " + e.getMessage(), e);
-    } catch (InterruptedException ixe) {
-      throw new ViewRenderingException(
-        "Interrupted while rendering Soy Sauce view [" + viewName + "]: " + ixe.getMessage(), ixe);
-    } catch (ExecutionException exe) {
-      throw new ViewRenderingException(
-        "Execution error while rendering Soy Sauce view [" + viewName + "]: " + exe.getMessage(), exe);
+      return Flowable.error(new ViewRenderingException(
+        "Error rendering Soy Sauce view [" + viewName + "]: " + e.getMessage(), e));
+
     }
   }
 
