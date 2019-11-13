@@ -58,6 +58,11 @@ ext {
             version: soyVersion,
             group  : 'com.google.template',
             name   : 'soy'
+        ],
+        commonsIo: [
+            version: commonsIoVersion,
+            group  : 'commons-io',
+            name   : 'commons-io'
         ]
     ]
 
