@@ -61,14 +61,14 @@ public class SoyResponseBuffer implements Closeable, AutoCloseable, AdvisingAppe
   // -- Constructors -- //
 
   /**
-   * Construct an `SoyResponseBuffer` backed by a buffer of default size, with the default charset.
+   * Construct a `SoyResponseBuffer` backed by a buffer of default size, with the default charset.
    */
   SoyResponseBuffer() {
     this(DEFAULT_CHARSET, DEFAULT_INITIAL_BUFFER, DEFAULT_SOFT_LIMIT);
   }
 
   /**
-   * Construct an `SoyResponseBuffer` backed by a buffer of default size, with the specified charset.
+   * Construct a `SoyResponseBuffer` backed by a buffer of default size, with the specified charset.
    *
    * @param charset Character set to use.
    */
@@ -77,7 +77,7 @@ public class SoyResponseBuffer implements Closeable, AutoCloseable, AdvisingAppe
   }
 
   /**
-   * Construct an `SoyResponseBuffer` backed by a buffer of a custom size and charset.
+   * Construct a `SoyResponseBuffer` backed by a buffer of a custom size and charset.
    *
    * @param charset Charset to use.
    * @param initialBufferSize Initial buffer size to use.
@@ -133,7 +133,7 @@ public class SoyResponseBuffer implements Closeable, AutoCloseable, AdvisingAppe
     int availableBytes = chunk.readableBytes();
     buffer.addComponent(true, chunk);
     chunk = allocateChunk();
-    return buffer.readSlice(availableBytes).asReadOnly().retain();
+    return buffer.readSlice(buffer.readableBytes()).asReadOnly().retain();
   }
 
   /**
@@ -144,10 +144,11 @@ public class SoyResponseBuffer implements Closeable, AutoCloseable, AdvisingAppe
    *         bytes, that were available when this method was called.
    */
   ByteBuf exportChunk(int maxBytes) {
-    int availableBytes = chunk.readableBytes();
-    buffer.addComponent(true, chunk);
-    chunk = allocateChunk();
-    return buffer.readSlice(Math.min(maxBytes, buffer.readableBytes())).asReadOnly().retain();
+//    int availableBytes = chunk.readableBytes();
+//    buffer.addComponent(true, chunk);
+//    chunk = allocateChunk();
+//    return buffer.readSlice(Math.min(maxBytes, buffer.readableBytes())).asReadOnly().retain();
+    return this.exportChunk();
   }
 
   @Override
