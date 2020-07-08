@@ -63,7 +63,14 @@ import java.util.Optional;
  * @since 1.2.1
  */
 @Singleton
-@Produces(MediaType.TEXT_HTML)
+@Produces({
+    MediaType.TEXT_HTML,
+    MediaType.TEXT_PLAIN,
+    MediaType.APPLICATION_XML,
+    MediaType.APPLICATION_JSON,
+    "application/javascript",
+    "text/css"
+})
 @Requires(property = SoyViewsRendererConfigurationProperties.PREFIX + ".enabled", notEquals = "false")
 @Requires(property = SoyViewsRendererConfigurationProperties.PREFIX + ".engine", notEquals = "tofu")
 @SuppressWarnings({"WeakerAccess", "UnstableApiUsage"})

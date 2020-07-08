@@ -118,8 +118,7 @@ public class ViewsFilter implements HttpServerFilter {
                           MediaType.TEXT_HTML_TYPE :
                           MediaType.APPLICATION_JSON_TYPE);
                       Optional<BaseViewsRenderer> optionalViewsRenderer = beanLocator.findBean(
-                        BaseViewsRenderer.class,
-                        new ProducesMediaTypeQualifier<>(type));
+                        BaseViewsRenderer.class);
 
                       if (optionalViewsRenderer.isPresent()) {
                           BaseViewsRenderer viewsRenderer = optionalViewsRenderer.get();
