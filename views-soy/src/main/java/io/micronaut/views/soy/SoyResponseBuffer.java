@@ -17,7 +17,6 @@ package io.micronaut.views.soy;
 
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import org.slf4j.Logger;
@@ -50,7 +49,6 @@ public class SoyResponseBuffer implements Closeable, AutoCloseable, AdvisingAppe
   static final int MAX_CHUNK_SIZE = DEFAULT_INITIAL_BUFFER * 2;
   private static final float DEFAULT_SOFT_LIMIT = 0.8f;
   private static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
-  private final ByteBufAllocator ALLOCATOR = PooledByteBufAllocator.DEFAULT;
 
   private ByteBuf chunk;
   private final CompositeByteBuf buffer;
@@ -101,7 +99,7 @@ public class SoyResponseBuffer implements Closeable, AutoCloseable, AdvisingAppe
     this.charset = charset;
     this.softLimit = softLimitRatio;
     this.initialBufferSize = initialBufferSize;
-    this.buffer = ALLOCATOR.compositeDirectBuffer(MAX_BUFFER_CHUNKS);
+    this.buffer = PooledByteBufAllocator.DEFAULT.compositeDirectBuffer(MAX_BUFFER_CHUNKS);
     this.chunk = allocateChunk();
   }
 
@@ -114,7 +112,7 @@ public class SoyResponseBuffer implements Closeable, AutoCloseable, AdvisingAppe
     if (LOG.isTraceEnabled()) {
       LOG.trace("Allocating chunk of sizing = " + initialBufferSize);
     }
-    return ALLOCATOR.directBuffer(initialBufferSize);
+    return PooledByteBufAllocator.DEFAULT.directBuffer(initialBufferSize);
   }
 
   /** Reset the internal state of the buffer. */
