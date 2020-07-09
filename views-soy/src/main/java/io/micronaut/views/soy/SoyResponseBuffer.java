@@ -50,7 +50,7 @@ public class SoyResponseBuffer implements Closeable, AutoCloseable, AdvisingAppe
   static final int MAX_CHUNK_SIZE = DEFAULT_INITIAL_BUFFER * 2;
   private static final float DEFAULT_SOFT_LIMIT = 0.8f;
   private static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
-  private static final ByteBufAllocator ALLOCATOR = PooledByteBufAllocator.DEFAULT;
+  private final ByteBufAllocator ALLOCATOR = PooledByteBufAllocator.DEFAULT;
 
   private ByteBuf chunk;
   private final CompositeByteBuf buffer;
