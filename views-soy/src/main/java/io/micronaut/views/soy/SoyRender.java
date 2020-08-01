@@ -15,7 +15,6 @@
  */
 package io.micronaut.views.soy;
 
-
 import com.google.template.soy.jbcsrc.api.AdvisingAppendable;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.api.SoySauce;
@@ -204,6 +203,30 @@ public final class SoyRender implements Closeable, AutoCloseable, AdvisingAppend
   }
 
   /**
+   * Update the provided digester with bytes gathered from the provided
+   * {@link ByteBuf}, whether directly for via a backing set of NIO buffers.
+   *
+   * @param buf Main byte buffer provided by Micronaut.
+   * @param digester Digester to update.
+   */
+  private void updateDigesterFromBuf(@Nonnull ByteBuf buf,
+                                     @Nonnull MessageDigest digester) {
+    int bufViewCount = buf.nioBufferCount();
+    if (bufViewCount > 0) {
+      java.nio.ByteBuffer[] buffers = buf.nioBuffers();
+      for (java.nio.ByteBuffer bufSlice : buffers) {
+        digester.update(bufSlice);
+      }
+    } else if (buf.hasArray()) {
+      digester.update(buf.array());
+    } else {
+      throw new IllegalStateException(
+        "Digester update requested, but there was no access to underlying " +
+        "response data.");
+    }
+  }
+
+  /**
    * Export a rendered chunk of raw bytes, in a buffer, from the Soy response
    * buffer held internally.
    *
@@ -220,8 +243,8 @@ public final class SoyRender implements Closeable, AutoCloseable, AdvisingAppend
     if (digester != null) {
       if (LOG.isDebugEnabled()) {
         LOG.debug("Mixing chunk into non-null MessageDigest.");
-        digester.update(buf.array());
       }
+      updateDigesterFromBuf(buf, digester);
     }
     return factory.wrap(buf);
   }
@@ -245,8 +268,8 @@ public final class SoyRender implements Closeable, AutoCloseable, AdvisingAppend
     if (digester != null) {
       if (LOG.isDebugEnabled()) {
         LOG.debug("Mixing chunk into non-null MessageDigest.");
-        digester.update(buf.array());
       }
+      updateDigesterFromBuf(buf, digester);
     }
     return factory.wrap(buf);
   }
