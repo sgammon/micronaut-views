@@ -239,7 +239,7 @@ public class SoySauceViewsRenderer implements ReactiveViewRenderer {
       context = (SoyContextMediator) data;
     } else if (data instanceof Map) {
       Map dataMap = (Map) data;
-      if (dataMap.size() == 1 && dataMap.containsKey(SOY_CONTEXT_SENTINEL)) {
+      if (dataMap.containsKey(SOY_CONTEXT_SENTINEL)) {
         // it's a packaged soy context
         context = (SoyContextMediator)dataMap.get(SOY_CONTEXT_SENTINEL);
       } else {
