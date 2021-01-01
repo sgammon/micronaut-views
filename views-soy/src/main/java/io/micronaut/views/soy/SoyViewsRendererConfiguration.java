@@ -48,6 +48,20 @@ public interface SoyViewsRendererConfiguration extends Toggleable {
   void setRenamingEnabled(boolean renaming);
 
   /**
+   * Specifies whether internationalization is enabled. Defaults to `true`.
+   *
+   * @return True if it is enabled.
+   */
+  boolean isI18NEnabled();
+
+  /**
+   * Turns internationalization on or off.
+   *
+   * @param i18n Internationalization status.
+   */
+  void setI18NEnabled(boolean i18n);
+
+  /**
    * @return Return a set of pre-compiled Soy templates, if supported
    */
   @Nullable default SoySauce getCompiledTemplates() {

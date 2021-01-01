@@ -65,8 +65,15 @@ public class SoyViewsRendererConfigurationProperties implements SoyViewsRenderer
   @SuppressWarnings("WeakerAccess")
   public static final boolean DEFAULT_RENAMING = true;
 
+  /**
+   * Whether to consider message files.
+   */
+  @SuppressWarnings("WeakerAccess")
+  public static final boolean DEFAULT_MESSAGES = true;
+
   private boolean enabled = DEFAULT_ENABLED;
   private boolean renaming = DEFAULT_RENAMING;
+  private boolean i18n = DEFAULT_MESSAGES;
   private int chunkSize = DEFAULT_CHUNK_SIZE;
   private String engine = DEFAULT_ENGINE;
   private SoyFileSetProvider fileSetProvider;
@@ -115,6 +122,26 @@ public class SoyViewsRendererConfigurationProperties implements SoyViewsRenderer
   @Override
   public void setRenamingEnabled(boolean renaming) {
     this.renaming = renaming;
+  }
+
+  /**
+   * Specifies whether internationalization is enabled. Defaults to `true`.
+   *
+   * @return True if it is enabled.
+   */
+  @Override
+  public boolean isI18NEnabled() {
+    return i18n;
+  }
+
+  /**
+   * Turns internationalization on or off.
+   *
+   * @param i18n Internationalization status.
+   */
+  @Override
+  public void setI18NEnabled(boolean i18n) {
+    this.i18n = i18n;
   }
 
   /**

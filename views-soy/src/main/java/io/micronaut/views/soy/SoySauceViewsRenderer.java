@@ -21,6 +21,7 @@ import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.api.SoySauce;
+import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import io.micronaut.context.annotation.Requires;
@@ -268,8 +269,21 @@ public class SoySauceViewsRenderer implements ReactiveViewRenderer {
         return null;
       }
     });
+
     renderer.setData(context.getProperties());
     renderer.setIj(context.getInjectedProperties(injectedPropsOverlay));
+
+    if (this.soyMicronautConfiguration.isI18NEnabled()
+        && context.translate()) {
+      try {
+        // try to load up a message bundle.
+        context.messageBundle().ifPresent(renderer::setMsgBundle);
+
+      } catch (IOException ioe) {
+        // some error occurred loading the translation file: fail loudly.
+        throw new SoyViewException(ioe);
+      }
+    }
 
     if (this.soyMicronautConfiguration.isRenamingEnabled()) {
       SoyNamingMapProvider renamingProvider = (

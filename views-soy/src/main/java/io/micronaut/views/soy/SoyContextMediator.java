@@ -16,11 +16,16 @@
 package io.micronaut.views.soy;
 
 
+import com.google.template.soy.msgs.SoyMsgBundle;
+import com.google.template.soy.msgs.SoyMsgBundleHandler;
+import com.google.template.soy.xliffmsgplugin.XliffMsgPlugin;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.MutableHttpResponse;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.File;
+import java.io.IOException;
 import java.security.MessageDigest;
 import java.util.Map;
 import java.util.Optional;
@@ -68,6 +73,45 @@ public interface SoyContextMediator {
    * @return {@link SoyNamingMapProvider} that should be used for this render routine.
    */
   default @Nonnull Optional<SoyNamingMapProvider> overrideNamingMap() {
+    return Optional.empty();
+  }
+
+  /**
+   * Whether to translate content with message bundles. Should return as `true` when a message bundle should be applied
+   * via {@link #messages()} or {@link #messageBundle()}. This method must return `true` along with configuration being
+   * set to `true` in relevant ways (i.e. the `i18n` setting, via {@link SoyViewsRendererConfiguration}).
+   *
+   * @return Whether to attempt translation via mediated message files (specified via {@link #messages()} or
+   *         {@link #messageBundle()}. Defaults to `false`.
+   */
+  default boolean translate() {
+    return false;
+  }
+
+  /**
+   * Return the messages file (XLFF) which should be applied to the template set before rendering. If provided, the XLFF
+   * plugin is injected when the template bundle is resolved.
+   *
+   * @return Selected message file for the request.
+   */
+  default @Nonnull Optional<File> messages() {
+    return Optional.empty();
+  }
+
+  /**
+   * Return the resolved message bundle for a given template run. How the message bundle is created is abstracted away
+   * from this method, but the default implementation calls {@link #messages()} to produce a file. If no file is
+   * available, {@link Optional#empty()} is propagated as the return value.
+   *
+   * @return Soy message bundle to use for a template render call.
+   * @throws IOException If an error is encountered loading the messages file.
+   */
+  default @Nonnull Optional<SoyMsgBundle> messageBundle() throws IOException {
+    Optional<File> messagesFile = messages();
+    if (messagesFile.isPresent()) {
+      SoyMsgBundleHandler msgBundleHandler = new SoyMsgBundleHandler(new XliffMsgPlugin());
+      return Optional.of(msgBundleHandler.createFromFile(messagesFile.get()));
+    }
     return Optional.empty();
   }
 
