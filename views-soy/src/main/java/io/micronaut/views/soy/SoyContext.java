@@ -17,9 +17,13 @@ package io.micronaut.views.soy;
 
 
 import com.google.common.collect.ImmutableMap;
+import com.google.template.soy.msgs.SoyMsgBundle;
 
 import javax.annotation.Nonnull;
 import javax.annotation.concurrent.Immutable;
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -44,19 +48,25 @@ public final class SoyContext implements SoyContextMediator {
   /** Naming map provider. Overrides globally-installed provider if set. */
   private final @Nonnull Optional<SoyNamingMapProvider> overrideNamingMap;
 
+  /** Messages bundle to apply (for internationalization). */
+  private final @Nonnull Optional<SoyI18NContext> i18n;
+
   /**
    * Private constructor. See static factory methods to create a new `SoyContext`.
    *
    * @param props Properties/values to make available via `@param` declarations.
    * @param injected Properties/values to make available via `@inject` declarations.
    * @param overrideNamingMap Naming map to apply, overrides any global rewrite map.
+   * @param i18n Translation data or pre-constructed configuration.
    */
   private SoyContext(@Nonnull Map<String, Object> props,
                      @Nonnull Map<String, Object> injected,
-                     @Nonnull Optional<SoyNamingMapProvider> overrideNamingMap) {
+                     @Nonnull Optional<SoyNamingMapProvider> overrideNamingMap,
+                     @Nonnull Optional<SoyI18NContext> i18n) {
     this.props = ImmutableMap.copyOf(props);
     this.injected = ImmutableMap.copyOf(injected);
     this.overrideNamingMap = overrideNamingMap;
+    this.i18n = i18n;
   }
 
   /**
@@ -66,21 +76,24 @@ public final class SoyContext implements SoyContextMediator {
    * @param props Properties to attach to this Soy render context.
    * @param injected Injected properties and values to attach to this context.
    * @param overrideNamingMap Naming map to use for this execution, if renaming is enabled.
+   * @param i18n Translation data or pre-constructed configuration.
    * @return Instance of `SoyContext` that holds the properties specified.
    * @throws IllegalArgumentException If any provided argument is `null`. Pass an empty map or an empty `Optional`.
    */
   public static SoyContext fromMap(@Nonnull Map<String, Object> props,
                                    @Nonnull Optional<Map<String, Object>> injected,
-                                   @Nonnull Optional<SoyNamingMapProvider> overrideNamingMap) {
+                                   @Nonnull Optional<SoyNamingMapProvider> overrideNamingMap,
+                                   @Nonnull Optional<SoyI18NContext> i18n) {
     //noinspection ConstantConditions,OptionalAssignedToNull
-    if (props == null || injected == null || overrideNamingMap == null) {
+    if (props == null || injected == null || overrideNamingMap == null || i18n == null) {
       throw new IllegalArgumentException(
-        "Must provide empty maps instead of `null` to `SoyContext`.");
+        "Must provide empty maps, or `Optional.empty()` where applicable, instead of `null` to `SoyContext`.");
     }
     return new SoyContext(
       props,
       injected.orElse(Collections.emptyMap()),
-      overrideNamingMap);
+      overrideNamingMap,
+      i18n);
   }
 
   // -- Public API -- //
@@ -123,4 +136,89 @@ public final class SoyContext implements SoyContextMediator {
     return overrideNamingMap;
   }
 
+  /**
+   * If a messages file was specified, return it here.
+   *
+   * @return Messages file, if specified.
+   */
+  @Override @Nonnull
+  public Optional<File> messagesFile() {
+    if (i18n.isPresent() && i18n.get().getMessageFile().isPresent()) {
+      return i18n.get().getMessageFile();
+    }
+    return Optional.empty();
+  }
+
+  /**
+   * If a messages resource (usually on the classpath) was specified, return it here.
+   *
+   * @return Messages resource, if specified.
+   */
+  @Override @Nonnull
+  public Optional<URL> messagesResource() {
+    if (i18n.isPresent() && i18n.get().getMessageResource().isPresent()) {
+      return i18n.get().getMessageResource();
+    }
+    return Optional.empty();
+  }
+
+  /**
+   * If a pre-constructed messages bundle was specified, return it here. Otherwise, fall back to default behavior, which
+   * involves spawning a messages bundle from either a messages file, or a messages resource, if either are specified.
+   * If neither are specified, {@link Optional#empty()} is returned.
+   *
+   * @return Pre-constructed message bundle, or resolved message bundle, or {@link Optional#empty()}.
+   * @throws IOException If the message bundle cannot be loaded and the routine encounters an error.
+   */
+  @Override @Nonnull
+  public Optional<SoyMsgBundle> messageBundle() throws IOException {
+    if (i18n.isPresent() && i18n.get().getMessageBundle().isPresent()) {
+      return i18n.get().getMessageBundle();
+    }
+    return SoyContextMediator.super.messageBundle();
+  }
+
+  /**
+   * Holds onto context related to internationalization via XLIFF message files.
+   */
+  public final class SoyI18NContext {
+    /** Pre-constructed message bundle. */
+    private final @Nonnull Optional<SoyMsgBundle> messageBundle;
+
+    /** Messages file to load. */
+    private final @Nonnull Optional<File> messageFile;
+
+    /** Messages resource to load. */
+    private final @Nonnull Optional<URL> messageResource;
+
+    /**
+     * Construct a Soy Internationalization Context from scratch.
+     *
+     * @param messageBundle Pre-constructed messages bundle, if available.
+     * @param messageFile Messages data file, if one should be loaded.
+     * @param messageResource Messages resource URL, if one should be loaded.
+     */
+    public SoyI18NContext(@Nonnull Optional<SoyMsgBundle> messageBundle,
+                          @Nonnull Optional<File> messageFile,
+                          @Nonnull Optional<URL> messageResource) {
+      this.messageBundle = messageBundle;
+      this.messageFile = messageFile;
+      this.messageResource = messageResource;
+    }
+
+    /** @return Pre-constructed message bundle, if available. */
+    @Nonnull public Optional<SoyMsgBundle> getMessageBundle() {
+      return messageBundle;
+    }
+
+    /** @return Messages data file, if one should be loaded. */
+    @Nonnull public Optional<File> getMessageFile() {
+      return messageFile;
+    }
+
+    /** @return Messages data URL, if data should be loaded. Usually a classpath resource. */
+    @Nonnull public Optional<URL> getMessageResource() {
+      return messageResource;
+    }
+  }
 }
