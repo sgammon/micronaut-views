@@ -26,6 +26,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.security.MessageDigest;
 import java.util.Map;
 import java.util.Optional;
@@ -78,11 +79,12 @@ public interface SoyContextMediator {
 
   /**
    * Whether to translate content with message bundles. Should return as `true` when a message bundle should be applied
-   * via {@link #messages()} or {@link #messageBundle()}. This method must return `true` along with configuration being
-   * set to `true` in relevant ways (i.e. the `i18n` setting, via {@link SoyViewsRendererConfiguration}).
+   * via {@link #messagesFile()}, {@link #messagesResource()} or {@link #messageBundle()}. This method must return
+   * `true` along with configuration being set to `true` in relevant ways (i.e. the `i18n` setting, via
+   * {@link SoyViewsRendererConfiguration}).
    *
-   * @return Whether to attempt translation via mediated message files (specified via {@link #messages()} or
-   *         {@link #messageBundle()}. Defaults to `false`.
+   * @return Whether to attempt translation via mediated message files (specified via {@link #messagesFile()} and
+   *         friends). Defaults to `false`.
    */
   default boolean translate() {
     return false;
@@ -94,23 +96,39 @@ public interface SoyContextMediator {
    *
    * @return Selected message file for the request.
    */
-  default @Nonnull Optional<File> messages() {
+  default @Nonnull Optional<File> messagesFile() {
+    return Optional.empty();
+  }
+
+  /**
+   * Return the messages resource (XLFF) which should be applied to the template set before rendering. If provided, the
+   * XLFF plugin is injected when the template bundle is resolved.
+   *
+   * @return Selected message resource URL for the request.
+   */
+  default @Nonnull Optional<URL> messagesResource() {
     return Optional.empty();
   }
 
   /**
    * Return the resolved message bundle for a given template run. How the message bundle is created is abstracted away
-   * from this method, but the default implementation calls {@link #messages()} to produce a file. If no file is
-   * available, {@link Optional#empty()} is propagated as the return value.
+   * from this method, but the default implementation calls {@link #messagesFile()} to produce a file, and falls back to
+   * {@link #messagesResource()} from there. If no file or resource are available, {@link Optional#empty()} is
+   * propagated as the return value.
    *
    * @return Soy message bundle to use for a template render call.
    * @throws IOException If an error is encountered loading the messages file.
    */
   default @Nonnull Optional<SoyMsgBundle> messageBundle() throws IOException {
-    Optional<File> messagesFile = messages();
-    if (messagesFile.isPresent()) {
+    Optional<File> messagesFile = messagesFile();
+    Optional<URL> messagesResource = messagesResource();
+    if (messagesFile.isPresent() || messagesResource.isPresent()) {
       SoyMsgBundleHandler msgBundleHandler = new SoyMsgBundleHandler(new XliffMsgPlugin());
-      return Optional.of(msgBundleHandler.createFromFile(messagesFile.get()));
+      if (messagesFile.isPresent()) {
+        return Optional.of(msgBundleHandler.createFromFile(messagesFile.get()));
+      } else {
+        return Optional.of(msgBundleHandler.createFromResource(messagesResource.get()));
+      }
     }
     return Optional.empty();
   }

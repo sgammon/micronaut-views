@@ -21,7 +21,6 @@ import com.google.template.soy.data.SoyTemplate;
 import com.google.template.soy.data.SoyValueProvider;
 import com.google.template.soy.jbcsrc.api.RenderResult;
 import com.google.template.soy.jbcsrc.api.SoySauce;
-import com.google.template.soy.msgs.SoyMsgBundle;
 import com.google.template.soy.shared.SoyCssRenamingMap;
 import com.google.template.soy.shared.SoyIdRenamingMap;
 import io.micronaut.context.annotation.Requires;

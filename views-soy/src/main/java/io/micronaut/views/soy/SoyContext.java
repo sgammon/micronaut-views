@@ -105,7 +105,8 @@ public final class SoyContext implements SoyContextMediator {
   @Override
   @SuppressWarnings("UnstableApiUsage")
   public @Nonnull Map<String, Object> getInjectedProperties(@Nonnull Map<String, Object> framework) {
-    ImmutableMap.Builder<String, Object> merged = ImmutableMap.builderWithExpectedSize(injected.size() + framework.size());
+    ImmutableMap.Builder<String, Object> merged = ImmutableMap.builderWithExpectedSize(
+      injected.size() + framework.size());
     merged.putAll(injected);
     merged.putAll(framework);
     return merged.build();
