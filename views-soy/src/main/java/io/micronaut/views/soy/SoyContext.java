@@ -181,7 +181,7 @@ public final class SoyContext implements SoyContextMediator {
   /**
    * Holds onto context related to internationalization via XLIFF message files.
    */
-  public final class SoyI18NContext {
+  public static final class SoyI18NContext {
     /** Pre-constructed message bundle. */
     private final @Nonnull Optional<SoyMsgBundle> messageBundle;
 
