@@ -30,6 +30,7 @@ import java.net.URL;
 import java.security.MessageDigest;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 
 /**
@@ -107,6 +108,15 @@ public interface SoyContextMediator {
    * @return Selected message resource URL for the request.
    */
   default @Nonnull Optional<URL> messagesResource() {
+    return Optional.empty();
+  }
+
+  /**
+   * Return the delegate package that should be set as active for a given Soy render run.
+   *
+   * @return Delegate package string.
+   */
+  default @Nonnull Optional<Predicate<String>> delegatePackage() {
     return Optional.empty();
   }
 

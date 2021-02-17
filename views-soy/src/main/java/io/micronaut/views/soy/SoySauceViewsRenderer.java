@@ -54,6 +54,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 
 /**
@@ -273,6 +274,9 @@ public class SoySauceViewsRenderer implements ReactiveViewRenderer {
 
     renderer.setData(context.getProperties());
     renderer.setIj(context.getInjectedProperties(injectedPropsOverlay));
+
+    // apply delegate package
+    context.delegatePackage().ifPresent(renderer::setActiveDelegatePackageSelector);
 
     if (this.soyMicronautConfiguration.isI18NEnabled()
         && context.translate()) {
